@@ -1,3 +1,4 @@
+import Admin from '../models/admin.model.js';
 import Users from '../models/user.model.js';
 import axios from 'axios';
 
@@ -9,6 +10,30 @@ import { uploadFileOnCloud, deleteFileFromCloud } from '../common/utils/uploadFi
 export const getCurrentUser = async (request, response) => {
 	try {
 		const profile = await Users.findById(request?.user._id).populate(["recentlyViewed", "wishlist"]);
+		response.status(200).json({ status: 200, profile });
+	} catch (error) {
+		console.log(error);
+		response.status(500).json({ status: 500, message: error.message });
+	}
+};
+
+
+// ========== Get Admin Profile ==========
+export const getAdmin = async (request, response) => {
+	try {
+		const profile = await Admin.findById(request?.admin._id);
+		response.status(200).json({ status: 200, profile });
+	} catch (error) {
+		console.log(error);
+		response.status(500).json({ status: 500, message: error.message });
+	}
+};
+
+
+// ========== Update Admin Profile ==========
+export const updateAdmin = async (request, response) => {
+	try {
+		const profile = await Admin.findByIdAndUpdate(request?.admin._id, { username: request.body?.username });
 		response.status(200).json({ status: 200, profile });
 	} catch (error) {
 		console.log(error);
@@ -68,25 +93,73 @@ export const updateCurrentUserPassword = async (request, response) => {
 
 
 // ========== Update Recently Viewed Properties ==========
-export const recentlyViewedProperties = async (request, response) => {
+export const handleSearchHistory = async (request, response) => {
 	try {
 		const { user, body } = request;
-		const { propertyID, action } = body;
-
-		if (!propertyID) return response.status(400).json({ status: 400, message: "Property ID is required" });
+		const { searchKeywords, action } = body;
 
 		const check = await Users.findById(user._id);
 		if (!check) return response.status(404).json({ status: 404, message: "User not found" });
 
 		const update = action === "add"
-			? { $addToSet: { recentlyViewed: propertyID } }
+			? { $addToSet: { searchHistory: searchKeywords } }
 			: action === "remove"
-			? { $pull: { recentlyViewed: propertyID } }
+			? { $pull: { searchHistory: searchKeywords } }
 			: null;
 
 		if (!update) return response.status(400).json({ status: 400, message: "Invalid action" });
 
-		const updatedUser = await Users.findByIdAndUpdate(user._id, update, { new: true }).populate(["recentlyViewed", "wishlist"]);
+		const updatedUser = await Users.findByIdAndUpdate(user._id, update, { new: true }).populate({
+			path: "recentlyViewed",
+			model: "Properties",
+			foreignField: "listingKey",
+			localField: "recentlyViewed",
+		}).populate({
+			path: "wishlist",
+			model: "Properties",
+			foreignField: "listingKey",
+			localField: "wishlist",
+		});
+
+		response.status(200).json({ status: 200, profile: updatedUser });
+	} catch (error) {
+		console.error("Error updating recently viewed properties:", error);
+		response.status(500).json({ status: 500, message: "Internal server error" });
+	}
+};
+
+
+// ========== Update Recently Viewed Properties ==========
+export const recentlyViewedProperties = async (request, response) => {
+	try {
+		const { user, body } = request;
+		const { listingKey, action } = body;
+
+		if (!listingKey) return response.status(400).json({ status: 400, message: "Property ID is required" });
+
+		const check = await Users.findById(user._id);
+		if (!check) return response.status(404).json({ status: 404, message: "User not found" });
+
+		const update = action === "add"
+			? { $addToSet: { recentlyViewed: listingKey } }
+			: action === "remove"
+			? { $pull: { recentlyViewed: listingKey } }
+			: null;
+
+		if (!update) return response.status(400).json({ status: 400, message: "Invalid action" });
+
+		const updatedUser = await Users.findByIdAndUpdate(user._id, update, { new: true }).populate({
+			path: "recentlyViewed",
+			model: "Properties",
+			foreignField: "listingKey",
+			localField: "recentlyViewed",
+		}).populate({
+			path: "wishlist",
+			model: "Properties",
+			foreignField: "listingKey",
+			localField: "wishlist",
+		});
+
 		response.status(200).json({ status: 200, profile: updatedUser });
 	} catch (error) {
 		console.error("Error updating recently viewed properties:", error);
@@ -99,18 +172,29 @@ export const recentlyViewedProperties = async (request, response) => {
 export const currentUserWishlist = async (request, response) => {
 	try {
 		const { user, body } = request;
-		const { propertyID } = body;
+		const { listingKey } = body;
 
-		if (!propertyID) return response.status(400).json({ status: 400, message: "Property ID is required" });
+		if (!listingKey) return response.status(400).json({ status: 400, message: "Property ID is required" });
 
 		const check = await Users.findById(user._id);
 		if (!check) return response.status(404).json({ status: 404, message: "User not found" });
 
-		const update = check.wishlist.includes(propertyID)
-			? { $pull: { wishlist: propertyID } }
-			: { $addToSet: { wishlist: propertyID } };
+		const update = check.wishlist.includes(listingKey)
+			? { $pull: { wishlist: listingKey } }
+			: { $addToSet: { wishlist: listingKey } };
 
-		const updatedUser = await Users.findByIdAndUpdate(user._id, update, { new: true }).populate(["recentlyViewed", "wishlist"]);
+		const updatedUser = await Users.findByIdAndUpdate(user._id, update, { new: true }).populate({
+			path: "recentlyViewed",
+			model: "Properties",
+			foreignField: "listingKey",
+			localField: "recentlyViewed",
+		}).populate({
+			path: "wishlist",
+			model: "Properties",
+			foreignField: "listingKey",
+			localField: "wishlist",
+		});
+
 		response.status(200).json({ status: 200, profile: updatedUser });
 	} catch (error) {
 		console.error("Error updating wishlist:", error);

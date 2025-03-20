@@ -42,12 +42,16 @@ const userSchema = new Schema(
             type: String,
             default: null
         },
+        searchHistory: {
+            type: Array,
+            trim: true
+        },
         recentlyViewed: [{
-            type: Schema.Types.ObjectId,
+            type: String,
             ref: "Properties"
         }],
         wishlist: [{
-            type: Schema.Types.ObjectId,
+            type: String,
             ref: "Properties"
         }],
         password: {

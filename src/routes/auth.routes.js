@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { social, signin, signup, verifyOTP, forgetPassword, resetPassword } from '../controllers/auth.controller.js';
+import { social, signin, login, signup, verifyOTP, forgetPassword, resetPassword } from '../controllers/auth.controller.js';
 // import rateLimit from 'express-rate-limit';
 
 const router = Router();
@@ -13,6 +13,7 @@ const router = Router();
 // });
 
 router.post('/auth/social', social);
+router.post('/auth/login', login);
 router.post('/auth/signin', signin);
 router.post('/auth/signup', signup);
 router.patch('/auth/verify-otp', verifyOTP);

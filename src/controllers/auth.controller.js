@@ -1,4 +1,5 @@
 import Users from '../models/user.model.js';
+import Admin from '../models/admin.model.js';
 import env from '../common/constants/env.constants.js';
 
 import { createHash } from 'crypto';
@@ -47,6 +48,23 @@ export const signin = async (request, response) => {
 		if (phone) query.push({ phone });
 
 		const user = query.length ? await Users.findOne({ $or: query, method: "manual" }) : null;
+		if (!user || !(await user.matchPassword(password))) return response.status(401).json({ status: 401, message: "Incorrect credentials" });
+
+		const accessToken = generateToken({ id: user._id });
+		response.status(200).json({ status: 200, accessToken });
+	} catch (error) {
+		console.log(error);
+		response.status(error.status).json({ status: error.status, message: error.message });
+	}
+};
+
+
+// ========== Handle Admin Login ==========
+export const login = async (request, response) => {
+	try {
+		const { username, password } = request.body;
+
+		const user = await Admin.findOne({ username });
 		if (!user || !(await user.matchPassword(password))) return response.status(401).json({ status: 401, message: "Incorrect credentials" });
 
 		const accessToken = generateToken({ id: user._id });

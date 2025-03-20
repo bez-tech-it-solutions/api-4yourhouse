@@ -4,6 +4,10 @@ const { Schema, model, models } = mongoose;
 
 const propertySchema = new Schema(
     {
+        listingKey: {
+            type: String,
+            unique: true
+        },
         json: {
             type: Object
         },

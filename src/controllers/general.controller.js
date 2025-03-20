@@ -58,7 +58,19 @@ export const getUsers = async (request, response) => {
 
 export const getSingleUser = async (request, response) => {
     try {
-        const user = await Users.findById(request.params.id).populate(["recentlyViewed", "wishlist"]).select('-__v -password');
+        const user = await Users.findById(request.params.id)
+            .populate({
+                path: "recentlyViewed",
+                model: "Properties",
+                foreignField: "listingKey",
+                localField: "recentlyViewed",
+            })
+            .populate({
+                path: "wishlist",
+                model: "Properties",
+                foreignField: "listingKey",
+                localField: "wishlist",
+            });
         response.status(200).json({ status: 200, user });
     } catch (error) {
         console.log(error);
